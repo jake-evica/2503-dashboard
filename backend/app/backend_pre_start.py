@@ -5,6 +5,7 @@ from sqlmodel import Session, select
 from tenacity import after_log, before_log, retry, stop_after_attempt, wait_fixed
 
 from app.core.db import engine
+from app.core.config import settings
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -21,6 +22,11 @@ wait_seconds = 1
 )
 def init(db_engine: Engine) -> None:
     try:
+        # Debug - print connection parameters without the actual password
+        db_uri = str(settings.SQLALCHEMY_DATABASE_URI)
+        masked_uri = db_uri.replace(settings.POSTGRES_PASSWORD, "***PASSWORD***")
+        logger.info(f"Attempting to connect to database with URI: {masked_uri}")
+        
         with Session(db_engine) as session:
             # Try to create session to check if DB is awake
             session.exec(select(1))
