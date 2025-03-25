@@ -12,10 +12,10 @@ if [ "$(whoami)" != "root" ]; then
   echo "To deploy to your server, follow these steps:"
   echo
   echo "1. Copy your project files to your server:"
-  echo "   rsync -avz --exclude 'node_modules' --exclude '__pycache__' --exclude 'venv' --exclude '.git' ./ root@gosystemslabs.com:/root/app/"
+  echo "   rsync -avz --exclude 'node_modules' --exclude '__pycache__' --exclude 'venv' --exclude '.git' ./ root@${DOMAIN}:/root/app/"
   echo
   echo "2. SSH into your server:"
-  echo "   ssh root@gosystemslabs.com"
+  echo "   ssh root@${DOMAIN}"
   echo
   echo "3. Run this script on your server:"
   echo "   cd /root/app"
@@ -52,9 +52,9 @@ read -sp "Enter password for Traefik dashboard: " PASSWORD
 echo
 export PASSWORD
 export HASHED_PASSWORD=$(openssl passwd -apr1 $PASSWORD)
-export DOMAIN=gosystemslabs.com
+export DOMAIN=${DOMAIN:-gosystemslabs.com}
 export EMAIL=jake@gosystemslab.com
-export FRONTEND_HOST=https://app.gosystemslabs.com
+export FRONTEND_HOST=${FRONTEND_HOST:-https://app.${DOMAIN}}
 
 # Copy middleware configurations for Traefik
 echo "Copying Traefik middleware configurations..."
@@ -74,8 +74,8 @@ sleep 10
 # Step 2: Deploy FastAPI Project
 echo "Deploying FastAPI project..."
 export ENVIRONMENT=production
-export DOMAIN=gosystemslabs.com
-export FRONTEND_HOST=https://app.gosystemslabs.com
+export DOMAIN=${DOMAIN:-gosystemslabs.com}
+export FRONTEND_HOST=${FRONTEND_HOST:-https://app.${DOMAIN}}
 
 # Tag Docker images with current timestamp
 export TAG=$(date +%Y%m%d%H%M%S)
@@ -115,4 +115,11 @@ echo "Adminer: https://adminer.${DOMAIN}"
 echo "Traefik Dashboard: https://traefik.${DOMAIN} (login with username 'admin' and the password you provided)"
 echo 
 echo "To check logs, use: docker compose logs [service]"
-echo "To check status, use: docker compose ps" 
+echo "To check status, use: docker compose ps"
+
+echo "Commands to run manually in development:"
+echo "   # To sync files to remote server:"
+echo "   rsync -avz --exclude 'node_modules' --exclude '__pycache__' --exclude 'venv' --exclude '.git' ./ root@${DOMAIN}:/root/app/"
+echo
+echo "   # To connect to remote server:"
+echo "   ssh root@${DOMAIN}" 

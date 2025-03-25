@@ -5,13 +5,14 @@ import {
   QueryClientProvider,
 } from "@tanstack/react-query"
 import { RouterProvider, createRouter } from "@tanstack/react-router"
-import React, { StrictMode } from "react"
+import React, { StrictMode, useEffect } from "react"
 import ReactDOM from "react-dom/client"
 import { routeTree } from "./routeTree.gen"
 import * as Sentry from "@sentry/react"
 
 import { ApiError, OpenAPI } from "./client"
 import { CustomProvider } from "./components/ui/provider"
+import { testApiConnectivity, testCorsConfiguration } from "./utils"
 
 // Initialize Sentry
 Sentry.init({
@@ -25,12 +26,51 @@ Sentry.init({
   environment: import.meta.env.MODE || "production",
 });
 
+// Add logging to debug API URL issues
+console.log("Environment:", import.meta.env.MODE);
+console.log("API URL from env:", import.meta.env.VITE_API_URL);
+
+// Test API connectivity on startup
+testApiConnectivity().then(result => {
+  console.log("API connectivity test completed:", result);
+});
+
+// Test CORS configuration
+testCorsConfiguration().then(result => {
+  console.log("CORS configuration test completed:", result);
+});
+
 OpenAPI.BASE = import.meta.env.VITE_API_URL
+console.log("OpenAPI BASE configured as:", OpenAPI.BASE);
+
 OpenAPI.TOKEN = async () => {
-  return localStorage.getItem("access_token") || ""
+  const token = localStorage.getItem("access_token") || "";
+  console.log("Token available:", !!token);
+  return token;
 }
 
+// Add a request interceptor to log request details
+OpenAPI.interceptors.request.use((config) => {
+  console.log("API Request:", {
+    method: config.method,
+    url: config.url,
+    headers: config.headers,
+  });
+  return config;
+});
+
+// Add a response interceptor to log response details
+OpenAPI.interceptors.response.use((response) => {
+  console.log("API Response:", {
+    status: response.status,
+    statusText: response.statusText,
+    url: response.config?.url,
+  });
+  return response;
+});
+
 const handleApiError = (error: Error) => {
+  console.error("API Error:", error);
   if (error instanceof ApiError && [401, 403].includes(error.status)) {
     localStorage.removeItem("access_token")
     window.location.href = "/login"

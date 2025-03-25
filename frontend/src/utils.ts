@@ -53,3 +53,76 @@ export const handleError = (err: ApiError) => {
   }
   showErrorToast(errorMessage)
 }
+
+/**
+ * Tests connectivity to the API by making a simple fetch request to a health check endpoint
+ * This is useful for diagnosing URL loading issues
+ */
+export async function testApiConnectivity() {
+  const apiUrl = import.meta.env.VITE_API_URL;
+  
+  try {
+    console.log("Testing API connectivity to:", apiUrl);
+    
+    // Test direct fetch without using the SDK
+    const response = await fetch(`${apiUrl}/api/v1/utils/health-check/`);
+    const data = await response.json();
+    
+    console.log("API connectivity test result:", {
+      status: response.status,
+      ok: response.ok,
+      data,
+      headers: Object.fromEntries([...response.headers.entries()]),
+    });
+    
+    return { success: true, status: response.status, data };
+  } catch (error) {
+    console.error("API connectivity test failed:", error);
+    return { success: false, error };
+  }
+}
+
+/**
+ * Tests for potential CORS issues by sending a preflight request
+ * This is useful to diagnose if CORS is blocking API requests
+ */
+export async function testCorsConfiguration() {
+  const apiUrl = import.meta.env.VITE_API_URL;
+  
+  try {
+    console.log("Testing CORS configuration with:", apiUrl);
+    
+    // Make a request that triggers CORS preflight
+    const response = await fetch(`${apiUrl}/api/v1/utils/health-check/`, {
+      method: 'OPTIONS',
+      headers: {
+        'Origin': window.location.origin,
+        'Access-Control-Request-Method': 'GET',
+        'Access-Control-Request-Headers': 'Content-Type, Authorization',
+      },
+    });
+    
+    console.log("CORS test result:", {
+      status: response.status,
+      ok: response.ok,
+      headers: Object.fromEntries([...response.headers.entries()]),
+      origin: window.location.origin,
+    });
+    
+    // Check for CORS headers
+    const corsHeaders = {
+      allowOrigin: response.headers.get('Access-Control-Allow-Origin'),
+      allowMethods: response.headers.get('Access-Control-Allow-Methods'),
+      allowHeaders: response.headers.get('Access-Control-Allow-Headers'),
+    };
+    
+    return { 
+      success: !!corsHeaders.allowOrigin, 
+      corsHeaders,
+      origin: window.location.origin 
+    };
+  } catch (error) {
+    console.error("CORS test failed:", error);
+    return { success: false, error, origin: window.location.origin };
+  }
+}
