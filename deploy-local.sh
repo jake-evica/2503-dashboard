@@ -12,12 +12,12 @@ export ENVIRONMENT=local
 export DOMAIN=localhost
 export POSTGRES_PASSWORD=postgres_secure_password123
 
-# Ensure docker network exists
-if ! docker network inspect traefik-public >/dev/null 2>&1; then
-  echo "Creating traefik-public network..."
-  docker network create traefik-public
+# Create the app-network if it doesn't exist
+if ! docker network inspect app-network >/dev/null 2>&1; then
+    echo "Creating app-network..."
+    docker network create app-network
 else
-  echo "Network traefik-public already exists."
+    echo "Network app-network already exists."
 fi
 
 # Start the database first

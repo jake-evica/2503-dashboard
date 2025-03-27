@@ -3,123 +3,142 @@
 # Exit on error
 set -e
 
-# Check if running on a remote server
-if [ "$(whoami)" != "root" ]; then
-  echo "=============================================="
-  echo "ERROR: This script must be run on your remote server as root"
-  echo "=============================================="
-  echo "This deployment script is intended for server use only."
-  echo "To deploy to your server, follow these steps:"
-  echo
-  echo "1. Copy your project files to your server:"
-  echo "   rsync -avz --exclude 'node_modules' --exclude '__pycache__' --exclude 'venv' --exclude '.git' ./ root@${DOMAIN}:/root/app/"
-  echo
-  echo "2. SSH into your server:"
-  echo "   ssh root@${DOMAIN}"
-  echo
-  echo "3. Run this script on your server:"
-  echo "   cd /root/app"
-  echo "   chmod +x deploy.sh"
-  echo "   ./deploy.sh"
-  echo "=============================================="
-  exit 1
-fi
+# Function to display usage instructions
+show_usage() {
+    echo "=============================================="
+    echo "ERROR: This script must be run on your remote server as root"
+    echo "=============================================="
+    echo "This deployment script is intended for server use only."
+    echo "To deploy to your server, follow these steps:"
+    echo
+    echo "1. Copy your project files to your server:"
+    echo "   rsync -avz --exclude 'node_modules' --exclude '__pycache__' --exclude 'venv' --exclude '.git' ./ root@\${DOMAIN}:/root/app/"
+    echo
+    echo "2. SSH into your server:"
+    echo "   ssh root@\${DOMAIN}"
+    echo
+    echo "3. Run this script on your server:"
+    echo "   cd /root/app"
+    echo "   chmod +x deploy.sh"
+    echo "   ./deploy.sh"
+    echo "=============================================="
+}
 
-echo "=============================================="
-echo "STARTING PRODUCTION DEPLOYMENT"
-echo "=============================================="
+# Function to set up SSL certificates
+setup_ssl() {
+    echo "🔒 Setting up SSL certificates..."
+    
+    # Create required directories
+    mkdir -p certbot/conf
+    mkdir -p certbot/data
+    mkdir -p nginx/ssl
+    
+    # Start nginx temporarily for SSL setup
+    docker compose up -d proxy
+    
+    # Get SSL certificates
+    docker compose run --rm certbot
+    
+    # Restart proxy to use new certificates
+    docker compose restart proxy
+}
 
-# Step 1: Setup Traefik (only needed once)
-echo "Setting up Traefik..."
-mkdir -p /root/code/traefik-public/
+# Function to set up authentication
+setup_auth() {
+    echo "🔑 Setting up authentication..."
+    
+    # Create .htpasswd file for Adminer if it doesn't exist
+    if [ ! -f nginx/.htpasswd ]; then
+        echo "Creating .htpasswd file for Adminer..."
+        read -sp "Enter password for Adminer: " ADMINER_PASSWORD
+        echo
+        echo "admin:$(openssl passwd -apr1 $ADMINER_PASSWORD)" > nginx/.htpasswd
+    fi
+}
 
-# Copy Traefik Docker Compose file to the directory
-cp docker-compose.traefik.prod.yml /root/code/traefik-public/docker-compose.yml
+# Function to deploy services
+deploy_services() {
+    echo "🚀 Deploying services..."
+    
+    # Switch to production environment
+    ./scripts/switch-env.sh prod
+    
+    # Start the database first
+    echo "📊 Starting database..."
+    docker compose up -d db
+    
+    # Wait for database to be healthy
+    echo "⏳ Waiting for database to be ready..."
+    until docker compose ps -q db &>/dev/null && docker compose exec db pg_isready -U postgres; do
+        echo "Database not ready yet... waiting"
+        sleep 5
+    done
+    
+    # Run database migrations
+    echo "🔄 Running database migrations..."
+    docker compose up prestart
+    
+    # Deploy all services
+    echo "🚀 Starting all services..."
+    docker compose --profile production up -d
+}
 
-# Create Docker network if it doesn't exist
-if ! docker network inspect traefik-public >/dev/null 2>&1; then
-  echo "Creating traefik-public network..."
-  docker network create traefik-public
-else
-  echo "Network traefik-public already exists."
-fi
+# Function to verify deployment
+verify_deployment() {
+    echo "✅ Verifying deployment..."
+    
+    # Check container status
+    docker compose ps
+    
+    # Check if any containers are unhealthy
+    if docker compose ps | grep -q "unhealthy"; then
+        echo "⚠️ Warning: Some containers are unhealthy!"
+        echo "Check the logs with: docker compose logs"
+        exit 1
+    fi
+}
 
-# Set environment variables for Traefik
-echo "Setting up environment variables for Traefik..."
-export USERNAME=admin
-# Prompt for Traefik dashboard password
-read -sp "Enter password for Traefik dashboard: " PASSWORD
-echo
-export PASSWORD
-export HASHED_PASSWORD=$(openssl passwd -apr1 $PASSWORD)
-export DOMAIN=${DOMAIN:-gosystemslabs.com}
-export EMAIL=jake@gosystemslab.com
-export FRONTEND_HOST=${FRONTEND_HOST:-https://app.${DOMAIN}}
+# Main deployment process
+main() {
+    # Check if running as root
+    if [ "$(whoami)" != "root" ]; then
+        show_usage
+        exit 1
+    fi
 
-# Copy middleware configurations for Traefik
-echo "Copying Traefik middleware configurations..."
-mkdir -p /root/code/traefik-public/config
-cp -r traefik/* /root/code/traefik-public/config/
+    echo "=============================================="
+    echo "🚀 STARTING PRODUCTION DEPLOYMENT"
+    echo "=============================================="
 
-# Start Traefik
-echo "Starting Traefik..."
-cd /root/code/traefik-public/
-docker compose up -d
-cd -
+    # Load environment variables
+    export DOMAIN=${DOMAIN:-gosystemslab.com}
+    export EMAIL=${EMAIL:-jake@gosystemslab.com}
+    export FRONTEND_HOST=${FRONTEND_HOST:-https://app.${DOMAIN}}
+    export ENVIRONMENT=production
+    export TAG=$(date +%Y%m%d%H%M%S)
 
-# Wait for Traefik to be ready
-echo "Waiting for Traefik to be ready..."
-sleep 10
+    # Execute deployment steps
+    setup_auth
+    setup_ssl
+    deploy_services
+    verify_deployment
 
-# Step 2: Deploy FastAPI Project
-echo "Deploying FastAPI project..."
-export ENVIRONMENT=production
-export DOMAIN=${DOMAIN:-gosystemslabs.com}
-export FRONTEND_HOST=${FRONTEND_HOST:-https://app.${DOMAIN}}
+    echo "=============================================="
+    echo "✨ Deployment completed successfully!"
+    echo "=============================================="
+    echo
+    echo "🌐 Your application is now available at:"
+    echo "Frontend: https://app.${DOMAIN}"
+    echo "Backend API: https://api.${DOMAIN}"
+    echo "API Documentation: https://api.${DOMAIN}/docs"
+    echo "Adminer: https://adminer.${DOMAIN}"
+    echo 
+    echo "📝 Useful commands:"
+    echo "- View logs: docker compose logs [service]"
+    echo "- Check status: docker compose ps"
+    echo "- Restart services: docker compose restart"
+    echo "- Stop all: docker compose down"
+}
 
-# Tag Docker images with current timestamp
-export TAG=$(date +%Y%m%d%H%M%S)
-
-# Make sure we stop any existing containers to avoid conflicts
-echo "Stopping any existing containers..."
-docker compose -f docker-compose.yml down || true
-
-# Start the database first
-echo "Starting database container first..."
-docker compose -f docker-compose.yml up -d db
-
-# Wait for database to be healthy
-echo "Waiting for database to be ready..."
-until docker compose -f docker-compose.yml ps -q db &>/dev/null && docker compose -f docker-compose.yml exec db pg_isready -U postgres; do
-  echo "Waiting for database to be ready..."
-  sleep 5
-done
-
-# Run the prestart script separately to make sure database is initialized
-echo "Running database initialization..."
-docker compose -f docker-compose.yml up prestart
-
-# Build and deploy the rest of the services
-echo "Building and deploying remaining services..."
-docker compose -f docker-compose.yml up -d
-
-echo "=============================================="
-echo "Deployment completed successfully!"
-echo "=============================================="
-echo
-echo "Your application is now available at:"
-echo "Frontend: https://app.${DOMAIN}"
-echo "Backend API: https://api.${DOMAIN}"
-echo "API Documentation: https://api.${DOMAIN}/docs"
-echo "Adminer: https://adminer.${DOMAIN}"
-echo "Traefik Dashboard: https://traefik.${DOMAIN} (login with username 'admin' and the password you provided)"
-echo 
-echo "To check logs, use: docker compose logs [service]"
-echo "To check status, use: docker compose ps"
-
-echo "Commands to run manually in development:"
-echo "   # To sync files to remote server:"
-echo "   rsync -avz --exclude 'node_modules' --exclude '__pycache__' --exclude 'venv' --exclude '.git' ./ root@${DOMAIN}:/root/app/"
-echo
-echo "   # To connect to remote server:"
-echo "   ssh root@${DOMAIN}" 
+# Execute main function
+main 

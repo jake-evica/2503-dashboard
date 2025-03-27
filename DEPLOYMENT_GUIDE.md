@@ -1,6 +1,6 @@
 # Production Deployment Guide
 
-This guide explains how to deploy the application to a production server with Traefik as a reverse proxy.
+This guide explains how to deploy the application to a production server with Nginx as a reverse proxy.
 
 ## Prerequisites
 
@@ -63,7 +63,7 @@ chmod +x deploy.sh
 ```
 
 The deployment script will:
-1. Set up Traefik as a reverse proxy with automatic HTTPS
+1. Set up Nginx as a reverse proxy with automatic HTTPS
 2. Create necessary Docker networks
 3. Start the database first and ensure it's ready
 4. Run database migrations with the prestart service
@@ -78,7 +78,6 @@ After the deployment completes, your application should be available at:
 - Backend API: https://api.yourdomain.com
 - API Documentation: https://api.yourdomain.com/docs
 - Adminer (Database Admin): https://adminer.yourdomain.com
-- Traefik Dashboard: https://traefik.yourdomain.com (secured with HTTP Basic Auth)
 
 ## Troubleshooting
 
@@ -96,9 +95,9 @@ If you encounter issues with the deployment:
    docker compose logs db
    ```
 
-3. Verify Traefik is properly configured:
+3. Verify Nginx is properly configured:
    ```bash
-   docker compose -f /root/code/traefik-public/docker-compose.yml logs
+   docker compose -f docker-compose.nginx.yml logs
    ```
 
 4. Check if services are reachable:
@@ -108,7 +107,7 @@ If you encounter issues with the deployment:
 
 5. Inspect Docker networks:
    ```bash
-   docker network inspect traefik-public
+   docker network inspect app-network
    ```
 
 6. If needed, restart the deployment process:
