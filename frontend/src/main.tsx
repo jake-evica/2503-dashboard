@@ -56,6 +56,13 @@ OpenAPI.interceptors.request.use((config) => {
     url: config.url,
     headers: config.headers,
   });
+  
+  // Fix URL with duplicate /api/ paths
+  if (config.url && config.url.includes('/api/api/')) {
+    config.url = config.url.replace('/api/api/', '/api/');
+    console.log("Fixed URL with duplicate /api/ paths:", config.url);
+  }
+  
   return config;
 });
 
