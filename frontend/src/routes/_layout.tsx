@@ -7,7 +7,7 @@ import Sidebar from "@/components/Common/Sidebar"
 import { isLoggedIn } from "@/hooks/useAuth"
 
 const ContentContainer = styled(Flex)`
-  background: linear-gradient(135deg, #2d1b4e 0%, #1a0f2e 100%);
+  background: white;
   overflow: auto;
 `
 
