@@ -2,6 +2,7 @@ import { Badge, Container, Flex, Heading, Table } from "@chakra-ui/react"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import { z } from "zod"
+import styled from "styled-components"
 
 import { type UserPublic, UsersService } from "@/client"
 import AddUser from "@/components/Admin/AddUser"
@@ -13,6 +14,50 @@ import {
   PaginationPrevTrigger,
   PaginationRoot,
 } from "@/components/ui/pagination.tsx"
+
+const StyledHeading = styled(Heading)`
+  color: #3a1a5e;
+  position: relative;
+  display: inline-block;
+  margin-bottom: 30px;
+  
+  &:after {
+    content: '';
+    position: absolute;
+    width: 50px;
+    height: 3px;
+    background: linear-gradient(135deg, #9c27b0 0%, #673ab7 100%);
+    bottom: -10px;
+    left: 0;
+  }
+`
+
+const StyledTableHeader = styled(Table.Header)`
+  background: rgba(156, 39, 176, 0.05);
+  
+  th {
+    color: #3a1a5e;
+    font-weight: 600;
+  }
+`
+
+const StyledTableRow = styled(Table.Row)`
+  transition: background 0.2s ease;
+  
+  &:hover {
+    background: rgba(156, 39, 176, 0.03);
+  }
+`
+
+const StyledBadge = styled(Badge)`
+  background: #673ab7;
+  color: white;
+`
+
+const StyledContainer = styled(Container)`
+  padding-top: 10px;
+  padding-bottom: 40px;
+`
 
 const usersSearchSchema = z.object({
   page: z.number().catch(1),
@@ -59,7 +104,7 @@ function UsersTable() {
   return (
     <>
       <Table.Root size={{ base: "sm", md: "md" }}>
-        <Table.Header>
+        <StyledTableHeader>
           <Table.Row>
             <Table.ColumnHeader w="sm">Full name</Table.ColumnHeader>
             <Table.ColumnHeader w="sm">Email</Table.ColumnHeader>
@@ -67,16 +112,16 @@ function UsersTable() {
             <Table.ColumnHeader w="sm">Status</Table.ColumnHeader>
             <Table.ColumnHeader w="sm">Actions</Table.ColumnHeader>
           </Table.Row>
-        </Table.Header>
+        </StyledTableHeader>
         <Table.Body>
           {users?.map((user) => (
-            <Table.Row key={user.id} opacity={isPlaceholderData ? 0.5 : 1}>
+            <StyledTableRow key={user.id} opacity={isPlaceholderData ? 0.5 : 1}>
               <Table.Cell color={!user.full_name ? "gray" : "inherit"}>
                 {user.full_name || "N/A"}
                 {currentUser?.id === user.id && (
-                  <Badge ml="1" colorScheme="teal">
+                  <StyledBadge ml="1">
                     You
-                  </Badge>
+                  </StyledBadge>
                 )}
               </Table.Cell>
               <Table.Cell truncate maxW="sm">
@@ -92,7 +137,7 @@ function UsersTable() {
                   disabled={currentUser?.id === user.id}
                 />
               </Table.Cell>
-            </Table.Row>
+            </StyledTableRow>
           ))}
         </Table.Body>
       </Table.Root>
@@ -115,13 +160,13 @@ function UsersTable() {
 
 function Admin() {
   return (
-    <Container maxW="full">
-      <Heading size="lg" pt={12}>
+    <StyledContainer maxW="full">
+      <StyledHeading size="lg">
         Users Management
-      </Heading>
+      </StyledHeading>
 
       <AddUser />
       <UsersTable />
-    </Container>
+    </StyledContainer>
   )
 }

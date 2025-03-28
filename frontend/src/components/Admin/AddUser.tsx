@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { Controller, type SubmitHandler, useForm } from "react-hook-form"
+import styled from "styled-components"
 
 import { type UserCreate, UsersService } from "@/client"
 import type { ApiError } from "@/client/core/ApiError"
@@ -27,6 +28,78 @@ import {
   DialogTrigger,
 } from "../ui/dialog"
 import { Field } from "../ui/field"
+
+const AddButton = styled(Button)`
+  background: linear-gradient(135deg, #9c27b0 0%, #673ab7 100%);
+  color: white;
+  transition: all 0.2s ease;
+  
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(156, 39, 176, 0.3);
+  }
+  
+  svg {
+    margin-right: 8px;
+  }
+`
+
+const StyledInput = styled(Input)`
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(156, 39, 176, 0.2);
+  transition: all 0.2s ease;
+  
+  &:focus {
+    border-color: #9c27b0;
+    box-shadow: 0 0 0 1px rgba(156, 39, 176, 0.3);
+  }
+`
+
+const StyledDialogTitle = styled(DialogTitle)`
+  color: #3a1a5e;
+  font-weight: 600;
+`
+
+const PrimaryButton = styled(DialogActionTrigger)`
+  background: linear-gradient(135deg, #9c27b0 0%, #673ab7 100%);
+  color: white;
+  border: none;
+  transition: all 0.2s ease;
+  
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(156, 39, 176, 0.3);
+  }
+  
+  &:disabled {
+    opacity: 0.7;
+    background: linear-gradient(135deg, #9c27b0 0%, #673ab7 100%);
+    color: white;
+  }
+`
+
+const SecondaryButton = styled(DialogCloseTrigger)`
+  background: transparent;
+  color: #666;
+  border: 1px solid rgba(156, 39, 176, 0.3);
+  
+  &:hover {
+    background: rgba(156, 39, 176, 0.05);
+  }
+`
+
+const StyledDialogContent = styled(DialogContent)`
+  border-radius: 12px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+  
+  header {
+    border-bottom: 1px solid rgba(156, 39, 176, 0.1);
+  }
+  
+  footer {
+    border-top: 1px solid rgba(156, 39, 176, 0.1);
+  }
+`
 
 interface UserCreateForm extends UserCreate {
   confirm_password: string
@@ -84,15 +157,15 @@ const AddUser = () => {
       onOpenChange={({ open }) => setIsOpen(open)}
     >
       <DialogTrigger asChild>
-        <Button value="add-user" my={4}>
+        <AddButton value="add-user" my={4}>
           <FaPlus fontSize="16px" />
           Add User
-        </Button>
+        </AddButton>
       </DialogTrigger>
-      <DialogContent>
+      <StyledDialogContent>
         <form onSubmit={handleSubmit(onSubmit)}>
           <DialogHeader>
-            <DialogTitle>Add User</DialogTitle>
+            <StyledDialogTitle>Add User</StyledDialogTitle>
           </DialogHeader>
           <DialogBody>
             <Text mb={4}>
@@ -105,7 +178,7 @@ const AddUser = () => {
                 errorText={errors.email?.message}
                 label="Email"
               >
-                <Input
+                <StyledInput
                   id="email"
                   {...register("email", {
                     required: "Email is required",
@@ -121,7 +194,7 @@ const AddUser = () => {
                 errorText={errors.full_name?.message}
                 label="Full Name"
               >
-                <Input
+                <StyledInput
                   id="name"
                   {...register("full_name")}
                   placeholder="Full name"
@@ -135,7 +208,7 @@ const AddUser = () => {
                 errorText={errors.password?.message}
                 label="Set Password"
               >
-                <Input
+                <StyledInput
                   id="password"
                   {...register("password", {
                     required: "Password is required",
@@ -155,7 +228,7 @@ const AddUser = () => {
                 errorText={errors.confirm_password?.message}
                 label="Confirm Password"
               >
-                <Input
+                <StyledInput
                   id="confirm_password"
                   {...register("confirm_password", {
                     required: "Please confirm your password",
@@ -200,29 +273,18 @@ const AddUser = () => {
               />
             </Flex>
           </DialogBody>
-
-          <DialogFooter gap={2}>
-            <DialogActionTrigger asChild>
-              <Button
-                variant="subtle"
-                colorPalette="gray"
-                disabled={isSubmitting}
-              >
-                Cancel
-              </Button>
-            </DialogActionTrigger>
-            <Button
-              variant="solid"
-              type="submit"
-              disabled={!isValid}
+          <DialogFooter>
+            <SecondaryButton>Cancel</SecondaryButton>
+            <PrimaryButton
+              onClick={handleSubmit(onSubmit)}
+              disabled={!isValid || isSubmitting}
               loading={isSubmitting}
             >
               Save
-            </Button>
+            </PrimaryButton>
           </DialogFooter>
         </form>
-        <DialogCloseTrigger />
-      </DialogContent>
+      </StyledDialogContent>
     </DialogRoot>
   )
 }

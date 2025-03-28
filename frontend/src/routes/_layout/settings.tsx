@@ -1,11 +1,56 @@
 import { Container, Heading, Tabs } from "@chakra-ui/react"
 import { createFileRoute } from "@tanstack/react-router"
+import styled from "styled-components"
 
 import Appearance from "@/components/UserSettings/Appearance"
 import ChangePassword from "@/components/UserSettings/ChangePassword"
 import DeleteAccount from "@/components/UserSettings/DeleteAccount"
 import UserInformation from "@/components/UserSettings/UserInformation"
 import useAuth from "@/hooks/useAuth"
+
+const StyledHeading = styled(Heading)`
+  color: #3a1a5e;
+  position: relative;
+  display: inline-block;
+  margin-bottom: 30px;
+  
+  &:after {
+    content: '';
+    position: absolute;
+    width: 50px;
+    height: 3px;
+    background: linear-gradient(135deg, #9c27b0 0%, #673ab7 100%);
+    bottom: -10px;
+    left: 0;
+  }
+`
+
+const StyledTabsList = styled(Tabs.List)`
+  border-bottom: 1px solid rgba(156, 39, 176, 0.2);
+  margin-bottom: 24px;
+`
+
+const StyledTabTrigger = styled(Tabs.Trigger)`
+  padding: 12px 24px;
+  font-weight: medium;
+  color: #666;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s ease;
+  
+  &:hover {
+    color: #9c27b0;
+  }
+  
+  &[data-state="active"] {
+    color: #9c27b0;
+    border-bottom: 2px solid #9c27b0;
+  }
+`
+
+const StyledContainer = styled(Container)`
+  padding-top: 10px;
+  padding-bottom: 40px;
+`
 
 const tabsConfig = [
   { value: "my-profile", title: "My profile", component: UserInformation },
@@ -29,25 +74,25 @@ function UserSettings() {
   }
 
   return (
-    <Container maxW="full">
-      <Heading size="lg" textAlign={{ base: "center", md: "left" }} py={12}>
+    <StyledContainer maxW="full">
+      <StyledHeading size="lg" textAlign={{ base: "center", md: "left" }}>
         User Settings
-      </Heading>
+      </StyledHeading>
 
       <Tabs.Root defaultValue="my-profile" variant="subtle">
-        <Tabs.List>
+        <StyledTabsList>
           {finalTabs.map((tab) => (
-            <Tabs.Trigger key={tab.value} value={tab.value}>
+            <StyledTabTrigger key={tab.value} value={tab.value}>
               {tab.title}
-            </Tabs.Trigger>
+            </StyledTabTrigger>
           ))}
-        </Tabs.List>
+        </StyledTabsList>
         {finalTabs.map((tab) => (
           <Tabs.Content key={tab.value} value={tab.value}>
             <tab.component />
           </Tabs.Content>
         ))}
       </Tabs.Root>
-    </Container>
+    </StyledContainer>
   )
 }

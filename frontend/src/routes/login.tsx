@@ -141,9 +141,10 @@ const RememberMeLabel = styled.label`
   cursor: pointer;
 `
 
-const ForgotPassword = styled.a`
+const ForgotPassword = styled.span`
   color: rgba(255, 255, 255, 0.8);
   text-decoration: none;
+  cursor: pointer;
   
   &:hover {
     color: #9c27b0;

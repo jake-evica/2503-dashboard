@@ -10,6 +10,7 @@ import {
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { useState } from "react"
 import { type SubmitHandler, useForm } from "react-hook-form"
+import styled from "styled-components"
 
 import {
   type ApiError,
@@ -21,6 +22,50 @@ import useAuth from "@/hooks/useAuth"
 import useCustomToast from "@/hooks/useCustomToast"
 import { emailPattern, handleError } from "@/utils"
 import { Field } from "../ui/field"
+
+const StyledHeading = styled(Heading)`
+  color: #3a1a5e;
+  font-weight: 600;
+`
+
+const StyledInput = styled(Input)`
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(156, 39, 176, 0.2);
+  transition: all 0.2s ease;
+  
+  &:focus {
+    border-color: #9c27b0;
+    box-shadow: 0 0 0 1px rgba(156, 39, 176, 0.3);
+  }
+`
+
+const PrimaryButton = styled(Button)`
+  background: linear-gradient(135deg, #9c27b0 0%, #673ab7 100%);
+  color: white;
+  border: none;
+  transition: all 0.2s ease;
+  
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(156, 39, 176, 0.3);
+  }
+  
+  &:disabled {
+    opacity: 0.7;
+    background: linear-gradient(135deg, #9c27b0 0%, #673ab7 100%);
+    color: white;
+  }
+`
+
+const SecondaryButton = styled(Button)`
+  background: transparent;
+  color: #666;
+  border: 1px solid rgba(156, 39, 176, 0.3);
+  
+  &:hover {
+    background: rgba(156, 39, 176, 0.05);
+  }
+`
 
 const UserInformation = () => {
   const queryClient = useQueryClient()
@@ -72,9 +117,9 @@ const UserInformation = () => {
   return (
     <>
       <Container maxW="full">
-        <Heading size="sm" py={4}>
+        <StyledHeading size="sm" py={4}>
           User Information
-        </Heading>
+        </StyledHeading>
         <Box
           w={{ sm: "full", md: "sm" }}
           as="form"
@@ -82,7 +127,7 @@ const UserInformation = () => {
         >
           <Field label="Full name">
             {editMode ? (
-              <Input
+              <StyledInput
                 {...register("full_name", { maxLength: 30 })}
                 type="text"
                 size="md"
@@ -106,7 +151,7 @@ const UserInformation = () => {
             errorText={errors.email?.message}
           >
             {editMode ? (
-              <Input
+              <StyledInput
                 {...register("email", {
                   required: "Email is required",
                   pattern: emailPattern,
@@ -121,24 +166,21 @@ const UserInformation = () => {
             )}
           </Field>
           <Flex mt={4} gap={3}>
-            <Button
-              variant="solid"
+            <PrimaryButton
               onClick={toggleEditMode}
               type={editMode ? "button" : "submit"}
               loading={editMode ? isSubmitting : false}
               disabled={editMode ? !isDirty || !getValues("email") : false}
             >
               {editMode ? "Save" : "Edit"}
-            </Button>
+            </PrimaryButton>
             {editMode && (
-              <Button
-                variant="subtle"
-                colorPalette="gray"
+              <SecondaryButton
                 onClick={onCancel}
                 disabled={isSubmitting}
               >
                 Cancel
-              </Button>
+              </SecondaryButton>
             )}
           </Flex>
         </Box>
