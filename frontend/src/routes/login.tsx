@@ -59,18 +59,43 @@ function Login() {
       align="center"
       justify="center"
       p={4}
-      bgGradient="linear(to-br, #0f0c29, #302b63, #24243e)"
+      bgGradient="linear(to-br, #1a0b2e, #2f1d4e, #271739)"
+      bgSize="cover"
+      position="relative"
+      _before={{
+        content: '""',
+        position: "absolute",
+        top: 0,
+        right: 0,
+        bottom: 0,
+        left: 0,
+        bgGradient: "radial(circle at top right, rgba(167, 139, 250, 0.1), transparent 50%)",
+        pointerEvents: "none",
+      }}
     >
       <Box
         w="full"
         maxW="md"
         p={8}
-        borderRadius="xl"
-        bg="whiteAlpha.50"
-        backdropFilter="blur(10px)"
+        borderRadius="2xl"
+        bg="rgba(31, 17, 51, 0.8)"
+        backdropFilter="blur(20px)"
         borderWidth={1}
-        borderColor="whiteAlpha.100"
-        boxShadow="2xl"
+        borderColor="rgba(167, 139, 250, 0.2)"
+        boxShadow="0 8px 32px rgba(0, 0, 0, 0.37)"
+        position="relative"
+        overflow="hidden"
+        _before={{
+          content: '""',
+          position: "absolute",
+          top: "-50%",
+          right: "-50%",
+          bottom: "-50%",
+          left: "-50%",
+          background: "linear-gradient(to bottom right, rgba(167, 139, 250, 0.05), transparent)",
+          transform: "rotate(45deg)",
+          pointerEvents: "none",
+        }}
       >
         <Flex justify="center" mb={8}>
           <Heading
@@ -81,26 +106,26 @@ function Login() {
             fontWeight="bold"
             letterSpacing="wider"
             lineHeight="1.4"
-            textShadow="0 0 20px rgba(66, 153, 225, 0.5)"
+            textShadow="0 0 20px rgba(167, 139, 250, 0.5)"
             transition="all 0.3s ease"
             _hover={{ 
               transform: 'scale(1.05)',
-              textShadow: "0 0 30px rgba(99, 179, 237, 0.8)"
+              textShadow: "0 0 30px rgba(167, 139, 250, 0.8)"
             }}
             css={{
               animation: "pulse 2s infinite",
               "@keyframes pulse": {
                 "0%": {
                   opacity: 1,
-                  textShadow: "0 0 20px rgba(66, 153, 225, 0.5)"
+                  textShadow: "0 0 20px rgba(167, 139, 250, 0.5)"
                 },
                 "50%": {
                   opacity: 0.8,
-                  textShadow: "0 0 30px rgba(99, 179, 237, 0.8)"
+                  textShadow: "0 0 30px rgba(167, 139, 250, 0.8)"
                 },
                 "100%": {
                   opacity: 1,
-                  textShadow: "0 0 20px rgba(66, 153, 225, 0.5)"
+                  textShadow: "0 0 20px rgba(167, 139, 250, 0.5)"
                 }
               }
             }}
@@ -124,13 +149,20 @@ function Login() {
                 placeholder="Email"
                 type="email"
                 bg="whiteAlpha.50"
+                color="white"
                 borderColor="purple.500"
                 borderRadius="xl"
                 py={3}
                 px={4}
+                _placeholder={{ color: "whiteAlpha.600" }}
+                _hover={{
+                  borderColor: "purple.400",
+                  bg: "whiteAlpha.100"
+                }}
                 _focus={{
                   borderColor: "purple.400",
                   boxShadow: "0 0 0 1px rgba(167, 139, 250, 0.2)",
+                  bg: "whiteAlpha.100"
                 }}
               />
             </InputGroup>
@@ -143,13 +175,20 @@ function Login() {
             placeholder="Password"
             errors={errors}
             bg="whiteAlpha.50"
+            color="white"
             borderColor="purple.500"
             borderRadius="xl"
             py={3}
             px={4}
+            _placeholder={{ color: "whiteAlpha.600" }}
+            _hover={{
+              borderColor: "purple.400",
+              bg: "whiteAlpha.100"
+            }}
             _focus={{
               borderColor: "purple.400",
               boxShadow: "0 0 0 1px rgba(167, 139, 250, 0.2)",
+              bg: "whiteAlpha.100"
             }}
           />
           
@@ -160,6 +199,7 @@ function Login() {
                 color: '#A78BFA',
                 fontSize: '14px',
                 transition: 'color 0.2s',
+                textDecoration: 'none'
               }}
             >
               Forgot Password?
@@ -173,20 +213,20 @@ function Login() {
             size="lg"
             w="full"
             mt={4}
-            bg="#4299E1"
+            bg="purple.500"
             color="white"
             _hover={{
-              bg: "#63B3ED",
+              bg: "purple.400",
               transform: "translateY(-1px)",
-              boxShadow: "0 4px 12px rgba(99, 179, 237, 0.4)"
+              boxShadow: "0 4px 12px rgba(167, 139, 250, 0.4)"
             }}
             _active={{
-              bg: "#90CDF4",
+              bg: "purple.600",
               transform: "translateY(0)",
             }}
             transition="all 0.2s"
             borderRadius="xl"
-            boxShadow="0 2px 8px rgba(66, 153, 225, 0.2)"
+            boxShadow="0 2px 8px rgba(167, 139, 250, 0.2)"
           >
             Log In
           </Button>
