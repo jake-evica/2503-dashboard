@@ -278,7 +278,7 @@ const AddUser = () => {
             <PrimaryButton
               onClick={handleSubmit(onSubmit)}
               disabled={!isValid || isSubmitting}
-              loading={isSubmitting}
+              _loading={isSubmitting}
             >
               Save
             </PrimaryButton>
