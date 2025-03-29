@@ -1,26 +1,46 @@
-import React, { useState } from "react"
 import {
   Box,
-  Button,
+  Link as ChakraLink,
   Flex,
   Heading,
   Icon,
   Input,
   Stack,
-  Text
+  Text,
 } from "@chakra-ui/react"
-import { FiUpload, FiInfo, FiChevronDown, FiChevronUp } from "react-icons/fi"
+import type React from "react"
+import { useState } from "react"
+import { FiDownload, FiInfo, FiUpload } from "react-icons/fi"
+import { Button } from "../../components/ui/button"
+
+/*
+type OptimizationResult = {
+  data: any[];
+  columns: string[];
+  summary: {
+    total_rows: number;
+    updates_recommended: number;
+    avg_change: number;
+  };
+};
+*/
 
 const BidOptimizer: React.FC = () => {
   const [file, setFile] = useState<File | null>(null)
   const [targetAcos, setTargetAcos] = useState(30)
   const [increaseSpendOnPromising, setIncreaseSpendOnPromising] = useState(true)
-  const [showKeywordInfo, setShowKeywordInfo] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [successMessage, setSuccessMessage] = useState<string | null>(null)
+  const [downloadId, setDownloadId] = useState<string | null>(null)
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0]
     if (selectedFile) {
       setFile(selectedFile)
+      setError(null)
+      setSuccessMessage(null)
+      setDownloadId(null)
     }
   }
 
@@ -29,6 +49,9 @@ const BidOptimizer: React.FC = () => {
     const droppedFile = e.dataTransfer.files[0]
     if (droppedFile) {
       setFile(droppedFile)
+      setError(null)
+      setSuccessMessage(null)
+      setDownloadId(null)
     }
   }
 
@@ -37,158 +60,282 @@ const BidOptimizer: React.FC = () => {
   }
 
   const showPromisingKeywordsInfo = () => {
-    alert("Promising keywords are those with high conversion rates and positive ROI trends.")
+    alert(
+      "When checked, the tool may increase bids slightly for keywords with low spend, zero sales, but good Click-Through Rates (CTR >= 0.3%) and low % of AOV (<= 10%), potentially capturing missed opportunities.",
+    )
   }
 
-  const toggleKeywordInfo = () => {
-    setShowKeywordInfo(!showKeywordInfo)
+  const processBidOptimization = async () => {
+    if (!file) {
+      setError("Please upload a file first")
+      setSuccessMessage(null)
+      setDownloadId(null)
+      return
+    }
+
+    setLoading(true)
+    setError(null)
+    setSuccessMessage(null)
+    setDownloadId(null)
+
+    try {
+      const formData = new FormData()
+      formData.append("file", file)
+      formData.append("target_acos", targetAcos.toString())
+      formData.append("increase_spend", increaseSpendOnPromising.toString())
+
+      // Use the direct backend URL instead of relying on the Vite proxy
+      const apiUrl = "http://localhost:8000/api/v1/ppc/upload"
+
+      const response = await fetch(apiUrl, {
+        method: "POST",
+        body: formData,
+        headers: {
+          Accept: "application/json",
+        },
+      })
+
+      if (!response.ok) {
+        // Store the response status for error reporting
+        const statusText = response.statusText || `Error ${response.status}`
+
+        // Try to get error details as JSON, but prepare for failure
+        let errorDetail = `Request failed: ${statusText}`
+
+        // Clone the response before reading its body
+        const responseClone = response.clone()
+
+        try {
+          const errorData = await response.json()
+          errorDetail = errorData.detail || errorDetail
+        } catch (jsonError) {
+          // If JSON parsing fails, try to get text instead, using the cloned response
+          try {
+            const textResponse = await responseClone.text()
+            if (textResponse) {
+              errorDetail = textResponse
+            }
+          } catch (textError) {
+            // If both methods fail, just use the status
+            console.error("Failed to read error response", textError)
+          }
+        }
+
+        throw new Error(errorDetail)
+      }
+
+      const data = await response.json()
+      if (data.download_id) {
+        setDownloadId(data.download_id)
+        setSuccessMessage(data.message || "File processed successfully!")
+      } else {
+        throw new Error("Processing response missing download ID.")
+      }
+    } catch (err: any) {
+      const message =
+        err.message || "An unexpected error occurred during processing."
+      setError(message)
+      setDownloadId(null)
+      console.error("Optimization failed:", err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const decreaseTargetAcos = () => {
+    if (targetAcos > 0) {
+      setTargetAcos(targetAcos - 1)
+    }
+  }
+
+  const increaseTargetAcos = () => {
+    setTargetAcos(targetAcos + 1)
   }
 
   return (
     <Stack direction="column" gap={8}>
       <Box>
-        <Heading as="h2" size="md" mb={4}>Amazon PPC Bid Optimization Tool</Heading>
+        <Heading as="h2" size="md" mb={4}>
+          Amazon PPC Bid Optimization Tool
+        </Heading>
         <Text color="gray.600" fontSize="lg">
-          This tool helps you optimize your Amazon PPC bids based on performance metrics. Upload your PPC data and set your target ACOS to get bid recommendations.
+          Upload your PPC data (.xlsx, Sheet 1) and optionally include ASIN
+          Average Order Value data in Sheet 2. Set your Target ACOS and
+          preferences to generate an optimized bid file.
         </Text>
       </Box>
 
       <Box py={4}>
-        <Heading as="h3" size="sm" mb={5}>Upload PPC Data</Heading>
+        <Heading as="h3" size="sm" mb={5}>
+          Upload PPC Data File
+        </Heading>
         <Box
           borderWidth="1px"
           borderRadius="md"
           borderStyle="dashed"
-          borderColor="gray.300"
+          borderColor={error ? "red.300" : file ? "green.300" : "gray.300"}
           p={10}
-          bg="gray.50"
-          cursor="pointer"
+          bg={error ? "red.50" : file ? "green.50" : "gray.50"}
+          cursor={loading ? "not-allowed" : "pointer"}
           onDrop={handleDrop}
           onDragOver={handleDragOver}
-          onClick={() => document.getElementById("file-upload")?.click()}
+          onClick={() =>
+            !loading && document.getElementById("file-upload")?.click()
+          }
+          textAlign="center"
+          transition="background-color 0.2s ease"
+          opacity={loading ? 0.7 : 1}
         >
           <Stack direction="column" gap={4} align="center">
             <Icon as={FiUpload} boxSize={8} color="purple.500" />
-            <Text fontSize="lg" fontWeight="medium">Drag and drop file here</Text>
-            <Text fontSize="md" color="gray.500">Limit 200MB per file • XLSX, XLS, CSV</Text>
+            <Text fontSize="lg" fontWeight="medium">
+              Drag & drop XLSX file here
+            </Text>
+            <Text fontSize="md" color="gray.500">
+              (Requires Sheet 1 with PPC data, Sheet 2 with ASIN/AOV optional)
+            </Text>
             <Input
               type="file"
               id="file-upload"
               display="none"
-              accept=".xlsx,.xls,.csv"
+              accept=".xlsx"
               onChange={handleFileChange}
+              disabled={loading}
             />
-            <Button variant="outline" colorScheme="purple" size="md" px={6} py={5} mt={2}>
-              Browse files
+            <Button
+              variant="outline"
+              colorScheme="purple"
+              size="md"
+              px={6}
+              py={5}
+              mt={2}
+              disabled={loading}
+            >
+              Browse File
             </Button>
+            {file && !error && (
+              <Text mt={4} color="green.700" fontWeight="medium">
+                Selected: {file.name}
+              </Text>
+            )}
           </Stack>
         </Box>
       </Box>
 
       <Box py={4}>
-        <Text fontWeight="medium" mb={4} fontSize="lg">Target ACOS (%)</Text>
+        <Text fontWeight="medium" mb={4} fontSize="lg">
+          Target ACOS (%)
+        </Text>
         <Flex maxW="400px" align="center">
           <Input
             type="number"
             value={targetAcos}
-            onChange={(e) => setTargetAcos(Number(e.target.value))}
-            min={1}
-            max={100}
+            onChange={(e) => setTargetAcos(Math.max(0, Number(e.target.value)))}
+            min={0}
             maxW="200px"
             size="lg"
+            disabled={loading}
           />
-          <Button variant="ghost" size="lg" ml={4}>−</Button>
-          <Button variant="ghost" size="lg">+</Button>
+          <Button
+            variant="ghost"
+            size="lg"
+            ml={4}
+            onClick={decreaseTargetAcos}
+            disabled={loading}
+          >
+            −
+          </Button>
+          <Button
+            variant="ghost"
+            size="lg"
+            onClick={increaseTargetAcos}
+            disabled={loading}
+          >
+            +
+          </Button>
         </Flex>
       </Box>
 
       <Flex align="center" py={4}>
-        <Box as="label" display="flex" alignItems="center">
+        <Box
+          as="label"
+          display="flex"
+          alignItems="center"
+          cursor={loading ? "not-allowed" : "pointer"}
+        >
           <input
             type="checkbox"
             checked={increaseSpendOnPromising}
             onChange={(e) => setIncreaseSpendOnPromising(e.target.checked)}
-            style={{ marginRight: '12px', width: '18px', height: '18px' }}
+            style={{
+              marginRight: "12px",
+              width: "18px",
+              height: "18px",
+              cursor: "inherit",
+            }}
+            disabled={loading}
           />
-          <Text fontSize="lg">Increase spend on promising keywords</Text>
+          <Text fontSize="lg" opacity={loading ? 0.6 : 1}>
+            Increase spend on promising keywords
+          </Text>
         </Box>
-        <Box ml={2} cursor="pointer" onClick={showPromisingKeywordsInfo}>
+        <Box
+          ml={2}
+          cursor="pointer"
+          onClick={showPromisingKeywordsInfo}
+          title="Learn more about this option"
+        >
           <Icon as={FiInfo} color="gray.400" boxSize={5} />
         </Box>
       </Flex>
 
-      <Box py={4}>
-        <Text fontWeight="medium" mb={4} fontSize="lg">What are promising keywords?</Text>
-        <Button 
-          variant="outline" 
-          w="full" 
-          justifyContent="space-between" 
-          py={6} 
-          px={5}
-          onClick={toggleKeywordInfo}
-          borderRadius="md"
-        >
-          <Text>Select criteria</Text>
-          <Icon as={showKeywordInfo ? FiChevronUp : FiChevronDown} />
-        </Button>
-        
-        {showKeywordInfo && (
-          <Box 
-            mt={2} 
-            p={6} 
-            borderWidth="1px" 
-            borderRadius="md" 
-            borderColor="gray.200"
-            bg="white"
-          >
-            <Text fontSize="lg" fontWeight="medium" mb={4}>
-              Promising Keywords are keywords that:
-            </Text>
-            
-            <Box ml={4} mb={6}>
-              <Flex align="flex-start" mb={3}>
-                <Text mr={2}>•</Text>
-                <Text>Have a high Click-Through Rate (CTR) above 0.3%</Text>
-              </Flex>
-              <Flex align="flex-start" mb={3}>
-                <Text mr={2}>•</Text>
-                <Text>Have not generated sales yet</Text>
-              </Flex>
-              <Flex align="flex-start" mb={3}>
-                <Text mr={2}>•</Text>
-                <Text>Have low spend relative to AOV (less than 10% of AOV)</Text>
-              </Flex>
-            </Box>
-            
-            <Box mb={4}>
-              <Text fontWeight="medium" mb={2}>Example:</Text>
-              <Text>
-                A keyword with 100 impressions, 5 clicks (5% CTR), no sales, and $1.50 spend. If your AOV is $25, this keyword has only spent 6% of AOV but shows strong customer interest with its high CTR.
-              </Text>
-            </Box>
-            
-            <Text>
-              By increasing bids on these keywords, you're giving them more visibility to potentially generate sales.
-            </Text>
-          </Box>
+      <Button
+        colorScheme="purple"
+        size="lg"
+        onClick={processBidOptimization}
+        loading={loading}
+        disabled={!file || loading}
+        loadingText="Processing..."
+      >
+        Optimize Bids & Generate File
+      </Button>
+
+      <Box mt={4} textAlign="center" minHeight="24px">
+        {loading && (
+          <Text color="gray.600">
+            Processing your file... This may take a moment.
+          </Text>
+        )}
+        {error && !loading && (
+          <Text color="red.500" fontWeight="medium">
+            Error: {error}
+          </Text>
+        )}
+        {successMessage && !error && !loading && (
+          <Text color="green.600" fontWeight="medium">
+            {successMessage}
+          </Text>
         )}
       </Box>
-      
-      {!file && (
-        <Box p={5} borderRadius="md" bg="yellow.50" borderWidth="1px" borderColor="yellow.200">
-          <Text color="yellow.800" fontSize="md">
-            No PPC data files uploaded. Please upload a file using the uploader above.
-          </Text>
+
+      {downloadId && !error && !loading && (
+        <Box mt={6} textAlign="center">
+          <ChakraLink
+            href={`http://localhost:8000/api/v1/ppc/download/${downloadId}`}
+            target="_blank"
+            _hover={{ textDecoration: "none" }}
+          >
+            <Button colorScheme="green" size="lg">
+              <Box mr={2} display="inline-flex" alignItems="center">
+                <FiDownload />
+              </Box>
+              Download Optimized File
+            </Button>
+          </ChakraLink>
         </Box>
       )}
-      
-      <Box p={5} borderRadius="md" bg="blue.50" borderWidth="1px" borderColor="blue.200" mb={10}>
-        <Text color="blue.800" fontSize="md">
-          This tool helps you optimize bids based on your PPC campaign performance data. Upload your Amazon advertising data to get started.
-        </Text>
-      </Box>
     </Stack>
   )
 }
 
-export default BidOptimizer 
+export default BidOptimizer
