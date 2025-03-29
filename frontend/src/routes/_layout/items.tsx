@@ -44,16 +44,16 @@ export const Route = createFileRoute("/_layout/items")({
 function ItemsTable() {
   const navigate = useNavigate({ from: Route.fullPath })
   const { page } = Route.useSearch()
+  const setPage = Route.useSearch()[1]
 
   const { data, isLoading, isPlaceholderData } = useQuery({
     ...getItemsQueryOptions({ page }),
     placeholderData: (prevData) => prevData,
   })
 
-  const setPage = (page: number) =>
-    navigate({
-search: (prev) => ({ ...prev, page: page.toString() }),
-    })
+  const onPageChange = (newPage: number) => {
+    setPage({ page: newPage.toString() })
+  }
 
   const items = data?.data.slice(0, PER_PAGE) ?? []
   const count = data?.count ?? 0
@@ -118,7 +118,7 @@ search: (prev) => ({ ...prev, page: page.toString() }),
         <PaginationRoot
           count={count}
           pageSize={PER_PAGE}
-          onPageChange={({ page }) => setPage(page)}
+          onPageChange={({ page }) => onPageChange(page)}
         >
           <Flex>
             <PaginationPrevTrigger />
