@@ -669,7 +669,7 @@ const CampaignCreator: React.FC = () => {
       {downloadId && !error && (
         <Box textAlign="center">
           <ChakraLink
-            href={`http://localhost:8000/api/v1/ppc/download/${downloadId}`}
+            href={`${import.meta.env.VITE_API_BASE_URL}/api/v1/ppc/download/${downloadId}`}
             target="_blank"
             _hover={{ textDecoration: "none" }}
           >
