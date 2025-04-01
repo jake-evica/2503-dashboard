@@ -60,7 +60,7 @@ const StyledDialogTitle = styled(DialogTitle)`
   font-weight: 600;
 `
 
-const PrimaryButton = styled(DialogActionTrigger)`
+const PrimaryButton = styled(Button)`
   background: linear-gradient(135deg, #9c27b0 0%, #673ab7 100%);
   color: white;
   border: none;
@@ -276,7 +276,7 @@ const AddUser = () => {
           <DialogFooter>
             <SecondaryButton>Cancel</SecondaryButton>
             <PrimaryButton
-              onClick={handleSubmit(onSubmit)}
+              type="submit"
               disabled={!isValid || isSubmitting}
             >
               {isSubmitting ? "Saving..." : "Save"}

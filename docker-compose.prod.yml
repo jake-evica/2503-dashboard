@@ -123,7 +123,7 @@ services:
           memory: 1GB
 
   frontend:
-    image: ${DOCKER_IMAGE_FRONTEND}:${TAG-latest}
+    image: '${DOCKER_IMAGE_FRONTEND?Variable not set}:${TAG-latest}'
     restart: always
     env_file:
       - .env

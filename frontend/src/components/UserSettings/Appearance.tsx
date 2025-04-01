@@ -19,9 +19,9 @@ const Appearance = () => {
         </Heading>
 
         <RadioGroup
-          defaultValue={theme || "system"}
-          onChange={handleThemeChange}
-          name="theme"
+          onValueChange={(e) => e.value && setTheme(e.value)}
+          value={theme}
+          colorPalette="teal"
         >
           <Stack>
             <Radio value="system">System</Radio>

@@ -84,8 +84,8 @@ const BidOptimizer: React.FC = () => {
       formData.append("target_acos", targetAcos.toString())
       formData.append("increase_spend", increaseSpendOnPromising.toString())
 
-      // Use the direct backend URL instead of relying on the Vite proxy
-      const apiUrl = "http://localhost:8000/api/v1/ppc/upload"
+      // Use environment variable for the backend URL
+      const apiUrl = `${import.meta.env.VITE_API_BASE_URL}/api/v1/ppc/upload`
 
       const response = await fetch(apiUrl, {
         method: "POST",
@@ -321,7 +321,7 @@ const BidOptimizer: React.FC = () => {
       {downloadId && !error && !loading && (
         <Box mt={6} textAlign="center">
           <ChakraLink
-            href={`http://localhost:8000/api/v1/ppc/download/${downloadId}`}
+            href={`${import.meta.env.VITE_API_BASE_URL}/api/v1/ppc/download/${downloadId}`}
             target="_blank"
             _hover={{ textDecoration: "none" }}
           >
