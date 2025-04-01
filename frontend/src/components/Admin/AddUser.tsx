@@ -278,9 +278,8 @@ const AddUser = () => {
             <PrimaryButton
               onClick={handleSubmit(onSubmit)}
               disabled={!isValid || isSubmitting}
-              loading={isSubmitting}
             >
-              Save
+              {isSubmitting ? "Saving..." : "Save"}
             </PrimaryButton>
           </DialogFooter>
         </form>
