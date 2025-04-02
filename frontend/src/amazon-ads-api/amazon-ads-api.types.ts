@@ -102,7 +102,10 @@ export interface Keyword {
   clicks?: number;
   cost?: number;
   sales?: number;
+  orders?: number;
   acos?: number;
+  ctr?: number;
+  cpc?: number;
 }
 
 export interface NegativeKeyword {
@@ -128,7 +131,10 @@ export interface TargetingExpression {
   clicks?: number;
   cost?: number;
   sales?: number;
+  orders?: number;
   acos?: number;
+  ctr?: number;
+  cpc?: number;
 }
 
 // Performance Metrics
