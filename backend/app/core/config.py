@@ -8,6 +8,7 @@ from pydantic import (
     EmailStr,
     HttpUrl,
     PostgresDsn,
+    SecretStr,
     computed_field,
     model_validator,
 )
@@ -32,7 +33,7 @@ class Settings(BaseSettings):
         extra="ignore",
     )
     API_V1_STR: str = "/api/v1"
-    SECRET_KEY: str = secrets.token_urlsafe(32)
+    SECRET_KEY: SecretStr = SecretStr(secrets.token_urlsafe(32))
     # 60 minutes * 24 hours * 8 days = 8 days
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 8
     FRONTEND_HOST: str = "http://localhost:5173"
@@ -54,16 +55,17 @@ class Settings(BaseSettings):
     POSTGRES_SERVER: str
     POSTGRES_PORT: int = 5432
     POSTGRES_USER: str
-    POSTGRES_PASSWORD: str = ""
+    POSTGRES_PASSWORD: SecretStr = SecretStr("")
     POSTGRES_DB: str = ""
 
     @computed_field  # type: ignore[prop-decorator]
     @property
     def SQLALCHEMY_DATABASE_URI(self) -> PostgresDsn:
+        db_password = self.POSTGRES_PASSWORD.get_secret_value() if self.POSTGRES_PASSWORD else ""
         return PostgresDsn.build(
             scheme="postgresql+psycopg",
             username=self.POSTGRES_USER,
-            password=self.POSTGRES_PASSWORD,
+            password=db_password,
             host=self.POSTGRES_SERVER,
             port=self.POSTGRES_PORT,
             path=self.POSTGRES_DB,
@@ -74,7 +76,7 @@ class Settings(BaseSettings):
     SMTP_PORT: int = 587
     SMTP_HOST: str | None = None
     SMTP_USER: str | None = None
-    SMTP_PASSWORD: str | None = None
+    SMTP_PASSWORD: SecretStr | None = None
     EMAILS_FROM_EMAIL: EmailStr | None = None
     EMAILS_FROM_NAME: EmailStr | None = None
 
@@ -93,10 +95,15 @@ class Settings(BaseSettings):
 
     EMAIL_TEST_USER: EmailStr = "test@example.com"
     FIRST_SUPERUSER: EmailStr
-    FIRST_SUPERUSER_PASSWORD: str
+    FIRST_SUPERUSER_PASSWORD: SecretStr
 
-    def _check_default_secret(self, var_name: str, value: str | None) -> None:
-        if value == "changethis":
+    # --- Amazon Ads API Credentials --- 
+    AMAZON_CLIENT_ID: str | None = None
+    AMAZON_CLIENT_SECRET: SecretStr | None = None
+
+    def _check_default_secret(self, var_name: str, value: SecretStr | str | None) -> None:
+        secret_value = value.get_secret_value() if isinstance(value, SecretStr) else value
+        if secret_value == "changethis":
             message = (
                 f'The value of {var_name} is "changethis", '
                 "for security, please change it, at least for deployments."
@@ -113,6 +120,12 @@ class Settings(BaseSettings):
         self._check_default_secret(
             "FIRST_SUPERUSER_PASSWORD", self.FIRST_SUPERUSER_PASSWORD
         )
+        # Optionally enforce Amazon secrets in production
+        if self.ENVIRONMENT != "local":
+             if not self.AMAZON_CLIENT_ID:
+                 raise ValueError("AMAZON_CLIENT_ID is not set in production environment.")
+             if not self.AMAZON_CLIENT_SECRET:
+                  raise ValueError("AMAZON_CLIENT_SECRET is not set in production environment.")
 
         return self
 
