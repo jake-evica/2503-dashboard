@@ -97,9 +97,13 @@ class Settings(BaseSettings):
     FIRST_SUPERUSER: EmailStr
     FIRST_SUPERUSER_PASSWORD: SecretStr
 
-    # --- Amazon Ads API Credentials --- 
+    # --- Amazon Ads API Credentials ---
     AMAZON_CLIENT_ID: str | None = None
     AMAZON_CLIENT_SECRET: SecretStr | None = None
+    AMAZON_REDIRECT_URI: str | None = "http://localhost:8000/api/v1/auth/amazon/callback" # Default for local dev
+
+    # --- Token Encryption ---
+    TOKEN_ENCRYPTION_KEY: SecretStr | None = None
 
     def _check_default_secret(self, var_name: str, value: SecretStr | str | None) -> None:
         secret_value = value.get_secret_value() if isinstance(value, SecretStr) else value
@@ -126,6 +130,8 @@ class Settings(BaseSettings):
                  raise ValueError("AMAZON_CLIENT_ID is not set in production environment.")
              if not self.AMAZON_CLIENT_SECRET:
                   raise ValueError("AMAZON_CLIENT_SECRET is not set in production environment.")
+             if not self.TOKEN_ENCRYPTION_KEY:
+                 raise ValueError("TOKEN_ENCRYPTION_KEY is not set in non-local environment.")
 
         return self
 

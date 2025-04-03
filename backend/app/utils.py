@@ -12,6 +12,10 @@ from jwt.exceptions import InvalidTokenError
 from app.core import security
 from app.core.config import settings
 
+# --- Added for Token Encryption ---
+from cryptography.fernet import Fernet, InvalidToken
+# --- End Added ---
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -121,3 +125,30 @@ def verify_password_reset_token(token: str) -> str | None:
         return str(decoded_token["sub"])
     except InvalidTokenError:
         return None
+
+
+# --- Added for Token Encryption ---
+def get_fernet() -> Fernet:
+    """Initializes Fernet with the key from settings."""
+    if not settings.TOKEN_ENCRYPTION_KEY:
+        raise ValueError("TOKEN_ENCRYPTION_KEY is not set in settings.")
+    # Ensure the key is bytes
+    key_bytes = settings.TOKEN_ENCRYPTION_KEY.get_secret_value().encode()
+    return Fernet(key_bytes)
+
+def encrypt_token(token: str) -> bytes:
+    """Encrypts a token string using Fernet."""
+    fernet = get_fernet()
+    return fernet.encrypt(token.encode())
+
+def decrypt_token(encrypted_token: bytes) -> str | None:
+    """Decrypts a token string using Fernet. Returns None if decryption fails."""
+    if not encrypted_token:
+        return None
+    fernet = get_fernet()
+    try:
+        return fernet.decrypt(encrypted_token).decode()
+    except InvalidToken:
+        logger.error("Failed to decrypt token. It might be invalid or corrupted.")
+        return None
+# --- End Added ---

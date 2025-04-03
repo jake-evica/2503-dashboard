@@ -1,4 +1,5 @@
 import uuid
+from datetime import datetime
 
 from pydantic import EmailStr
 from sqlmodel import Field, Relationship, SQLModel
@@ -44,6 +45,10 @@ class User(UserBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     hashed_password: str
     items: list["Item"] = Relationship(back_populates="owner", cascade_delete=True)
+    # Fields for Amazon Ads OAuth Tokens
+    amazon_ads_encrypted_access_token: bytes | None = Field(default=None)
+    amazon_ads_encrypted_refresh_token: bytes | None = Field(default=None)
+    amazon_ads_token_expiry: datetime | None = Field(default=None)
 
 
 # Properties to return via API, id is always required
