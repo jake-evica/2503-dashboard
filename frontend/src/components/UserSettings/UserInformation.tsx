@@ -182,6 +182,13 @@ const UserInformation = () => {
                 Cancel
               </SecondaryButton>
             )}
+            <SecondaryButton
+              onClick={() => {
+                window.location.href = "/api/v1/auth/amazon/login"
+              }}
+            >
+              Link Amazon Account
+            </SecondaryButton>
           </Flex>
         </Box>
       </Container>
